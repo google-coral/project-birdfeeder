@@ -22,5 +22,5 @@ python3 bird_classify.py \
 	--labels imagenet_labels.txt \
 	--storage sdcard_directory \
 	--sound sound_file.wav \
-	--training True
+	--training True \
 	--print True
