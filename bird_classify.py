@@ -116,7 +116,7 @@ def main():
         nonlocal last_time
         nonlocal last_results
         start_time = time.monotonic()
-        results = engine.ClassifyWithImage(image, threshold=args.threshold, top_k=args.top_k)
+        results = engine.classify_with_image(image, threshold=args.threshold, top_k=args.top_k)
         end_time = time.monotonic()
         results = [(labels[i], score) for i, score in results]
 
