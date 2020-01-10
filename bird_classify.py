@@ -41,7 +41,7 @@ def save_data(image,results,path,ext='png'):
     """Saves camera frame and model inference results
     to user-defined storage directory."""
     tag = '%010d' % int(time.monotonic()*1000)
-    name = '%simg-%s.%s' %(path,tag,ext)
+    name = '%s/img-%s.%s' %(path,tag,ext)
     image.save(name)
     print('Frame saved as: %s' %name)
     logging.info('Image: %s Results: %s', tag,results)
