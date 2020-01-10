@@ -132,7 +132,7 @@ def main():
           if results[0][0] !='background':
             save_data(image, storage_dir,results)
           if 'fox squirrel, eastern fox squirrel, Sciurus niger' in results:
-            playsound(deterrent)
+            playsound(args.sound)
             logging.info('Deterrent sounded')
 
         last_results=results
