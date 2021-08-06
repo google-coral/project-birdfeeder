@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-pip3 install svgwrite playsound
+pip3 install svgwrite playsound PyGObject==3.30.4
 pip3 install --extra-index-url https://google-coral.github.io/py-repo/ pycoral
 [ ! -d "models" ] && mkdir -p "models"
 cd models
