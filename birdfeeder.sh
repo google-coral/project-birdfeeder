@@ -18,9 +18,9 @@
 #!/bin/bash
 
 python3 bird_classify.py \
-	--model mobilenet_v2_1.0_224_quant_edgetpu.tflite \
-	--labels imagenet_labels.txt \
+	--model models/mobilenet_v2_1.0_224_quant_edgetpu.tflite \
+	--labels labels/imagenet_labels.txt \
 	--storage sdcard_directory \
 	--sound sound_file.wav \
-	--training True \
+	--training False \
 	--print True
