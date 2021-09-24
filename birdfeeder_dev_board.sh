@@ -20,7 +20,7 @@
 python3 bird_classify.py \
 	--model models/mobilenet_v2_1.0_224_quant_edgetpu.tflite \
 	--labels labels/imagenet_labels.txt \
-	--videosrc /dev/video0 \
+	--videosrc /dev/video1 \
 	--storage sdcard_directory \
 	--sound sound_file.wav \
 	--training False \

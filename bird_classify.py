@@ -78,8 +78,10 @@ def user_selections():
                         help='.tflite model path')
     parser.add_argument('--labels', required=True,
                         help='label file path')
+    parser.add_argument('--videosrc', help='Which video source to use', default='/dev/video0')
     parser.add_argument('--top_k', type=int, default=3,
                         help='number of classes with highest score to display')
+
     parser.add_argument('--threshold', type=float, default=0.1,
                         help='class score threshold')
     parser.add_argument('--storage', required=True,
@@ -167,7 +169,7 @@ def main():
 
         last_results = results
         last_time = end_time
-    result = gstreamer.run_pipeline(user_callback)
+    result = gstreamer.run_pipeline(user_callback, videosrc=args.videosrc)
 
 
 if __name__ == '__main__':
