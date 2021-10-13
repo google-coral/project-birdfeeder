@@ -5,8 +5,8 @@ for any visiting squirrels.
 # Steps with Coral USB accelerator and linux machines
 
 ```
-git clone https://github.com/hjonnala/project-birdfeeder.git
-cd project-birdefeeder
+git clone https://github.com/google-coral/project-birdfeeder.git
+cd project-birdfeeder
 sh install_requirements.sh
 sh birdfeeder.sh
 
@@ -15,8 +15,8 @@ sh birdfeeder.sh
 # Steps with Coal Dev Board and USB camera
 
 ```
-git clone https://github.com/hjonnala/project-birdfeeder.git
-cd project-birdefeeder
+git clone https://github.com/google-coral/project-birdfeeder.git
+cd project-birdfeeder
 sh install_requirements.sh
 sh birdfeeder_dev_board.sh
 ```
