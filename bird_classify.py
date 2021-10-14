@@ -69,7 +69,7 @@ def do_training(results,last_results,top_k):
     shared_labels  = set(new_labels).intersection(old_labels)
     if len(shared_labels) < top_k:
         print('Difference detected')
-    return True
+        return True
 
 
 def user_selections():
