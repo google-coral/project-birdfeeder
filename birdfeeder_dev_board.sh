@@ -23,5 +23,4 @@ python3 bird_classify.py \
 	--videosrc /dev/video1 \
 	--storage sdcard_directory \
 	--sound sound_file.wav \
-	--training False \
 	--print True
