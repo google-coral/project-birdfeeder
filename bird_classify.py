@@ -26,32 +26,29 @@ optionally can set this to training mode for collecting images for a custom
 model.
 
 """
-
 import argparse
 import time
-import re
-import imp
 import logging
-import gstreamer
-from edgetpu.classification.engine import ClassificationEngine
 from PIL import Image
 from playsound import playsound
 
-def save_data(image,results,path,ext='png'):
+from pycoral.utils.dataset import read_label_file
+from pycoral.utils.edgetpu import make_interpreter
+from pycoral.adapters import common
+from pycoral.adapters.classify import get_classes
+
+import gstreamer
+
+
+def save_data(image, results, path, ext='png'):
     """Saves camera frame and model inference results
     to user-defined storage directory."""
     tag = '%010d' % int(time.monotonic()*1000)
-    name = '%s/img-%s.%s' %(path,tag,ext)
+    name = '%s/img-%s.%s' % (path, tag, ext)
     image.save(name)
-    print('Frame saved as: %s' %name)
-    logging.info('Image: %s Results: %s', tag,results)
+    print('Frame saved as: %s' % name)
+    logging.info('Image: %s Results: %s', tag, results)
 
-def load_labels(path):
-    """Parses provided label file for use in model inference."""
-    p = re.compile(r'\s*(\d+)(.+)')
-    with open(path, 'r', encoding='utf-8') as f:
-      lines = (p.match(line).groups() for line in f.readlines())
-      return {int(num): text.strip() for num, text in lines}
 
 def print_results(start_time, last_time, end_time, results):
     """Print results to terminal for debugging."""
@@ -59,18 +56,21 @@ def print_results(start_time, last_time, end_time, results):
     fps = (1.0/(end_time - last_time))
     print('\nInference: %.2f ms, FPS: %.2f fps' % (inference_rate, fps))
     for label, score in results:
-      print(' %s, score=%.2f' %(label, score))
+        print(' %s, score=%.2f' % (label, score))
 
-def do_training(results,last_results,top_k):
+
+def do_training(results, last_results, top_k):
     """Compares current model results to previous results and returns
     true if at least one label difference is detected. Used to collect
     images for training a custom model."""
     new_labels = [label[0] for label in results]
     old_labels = [label[0] for label in last_results]
-    shared_labels  = set(new_labels).intersection(old_labels)
+    shared_labels = set(new_labels).intersection(old_labels)
     if len(shared_labels) < top_k:
-      print('Difference detected')
-      return True
+        print('Difference detected')
+        return True
+    return False
+
 
 def user_selections():
     parser = argparse.ArgumentParser()
@@ -78,6 +78,7 @@ def user_selections():
                         help='.tflite model path')
     parser.add_argument('--labels', required=True,
                         help='label file path')
+    parser.add_argument('--videosrc', help='Which video source to use', default='/dev/video0')
     parser.add_argument('--top_k', type=int, default=3,
                         help='number of classes with highest score to display')
     parser.add_argument('--threshold', type=float, default=0.1,
@@ -88,7 +89,7 @@ def user_selections():
                         help='File path to deterrent sound')
     parser.add_argument('--print', default=False, required=False,
                         help='Print inference results to terminal')
-    parser.add_argument('--training', default=False, required=False,
+    parser.add_argument('--training', action='store_true',
                         help='Training mode for image collection')
     args = parser.parse_args()
     return args
@@ -100,44 +101,62 @@ def main():
     gather images for custom model creation or in deterrent mode that sounds an
     'alarm' if a defined label is detected."""
     args = user_selections()
-    print("Loading %s with %s labels."%(args.model, args.labels))
-    engine = ClassificationEngine(args.model)
-    labels = load_labels(args.labels)
-    storage_dir = args.storage
+    print("Loading %s with %s labels." % (args.model, args.labels))
+    interpreter = make_interpreter(args.model)
+    interpreter.allocate_tensors()
+    labels = read_label_file(args.labels)
+    input_tensor_shape = interpreter.get_input_details()[0]['shape']
+    if (input_tensor_shape.size != 4 or
+            input_tensor_shape[0] != 1):
+        raise RuntimeError(
+            'Invalid input tensor shape! Expected: [1, height, width, channel]')
 
-    #Initialize logging file
-    logging.basicConfig(filename='%s/results.log'%storage_dir,
+    output_tensors = len(interpreter.get_output_details())
+    if output_tensors != 1:
+        raise ValueError(
+            ('Classification model should have 1 output tensor only!'
+             'This model has {}.'.format(output_tensors)))
+    storage_dir = args.storage
+    # Initialize logging file
+    logging.basicConfig(filename='%s/results.log' % storage_dir,
                         format='%(asctime)s-%(message)s',
                         level=logging.DEBUG)
-
     last_time = time.monotonic()
     last_results = [('label', 0)]
-    def user_callback(image,svg_canvas):
+
+    def user_callback(image, svg_canvas):
         nonlocal last_time
         nonlocal last_results
         start_time = time.monotonic()
-        results = engine.classify_with_image(image, threshold=args.threshold, top_k=args.top_k)
+        common.set_resized_input(
+            interpreter, image.size, lambda size: image.resize(size, Image.NEAREST))
+        interpreter.invoke()
+        results = get_classes(interpreter, args.top_k, args.threshold)
         end_time = time.monotonic()
+        play_sounds = [labels[i] for i, score in results]
         results = [(labels[i], score) for i, score in results]
-
         if args.print:
-          print_results(start_time,last_time, end_time, results)
+            print_results(start_time, last_time, end_time, results)
 
         if args.training:
-          if do_training(results,last_results,args.top_k):
-            save_data(image,results, storage_dir)
+            if do_training(results, last_results, args.top_k):
+                save_data(image, results, storage_dir)
         else:
-          #Custom model mode:
-          #The labels can be modified to detect/deter user-selected items
-          if results[0][0] !='background':
-            save_data(image, storage_dir,results)
-          if 'fox squirrel, eastern fox squirrel, Sciurus niger' in results:
-            playsound(args.sound)
-            logging.info('Deterrent sounded')
+            # Custom model mode:
+            # The labels can be modified to detect/deter user-selected items
+            if len(results):
+                if results[0][0] != 'background':
+                    save_data(image,  results, storage_dir)
 
-        last_results=results
+            if FOX_SQUIRREL_LABEL in play_sounds:
+                playsound(args.sound)
+                logging.info('Deterrent sounded')
+
+        last_results = results
         last_time = end_time
-    result = gstreamer.run_pipeline(user_callback)
+    gstreamer.run_pipeline(user_callback, videosrc=args.videosrc)
+
 
 if __name__ == '__main__':
+    FOX_SQUIRREL_LABEL = 'fox squirrel, eastern fox squirrel, Sciurus niger'
     main()

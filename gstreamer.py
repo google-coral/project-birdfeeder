@@ -60,8 +60,8 @@ def detectCoralDevBoard():
 
 def run_pipeline(user_function,
                  src_size=(640,480),
-                 appsink_size=(320, 180)):
-    PIPELINE = 'v4l2src device=/dev/video0 ! {src_caps} ! {leaky_q}  ! tee name=t'
+                 appsink_size=(320, 180), videosrc='/dev/video0'):
+    PIPELINE = 'v4l2src device={videosrc} ! {src_caps} ! {leaky_q}  ! tee name=t'
     if detectCoralDevBoard():
         SRC_CAPS = 'video/x-raw,format=YUY2,width={width},height={height},framerate=30/1'
         PIPELINE += """
@@ -86,7 +86,7 @@ def run_pipeline(user_function,
     src_caps = SRC_CAPS.format(width=src_size[0], height=src_size[1])
     dl_caps = DL_CAPS.format(width=appsink_size[0], height=appsink_size[1])
     sink_caps = SINK_CAPS.format(width=appsink_size[0], height=appsink_size[1])
-    pipeline = PIPELINE.format(leaky_q=LEAKY_Q,
+    pipeline = PIPELINE.format(videosrc=videosrc, leaky_q=LEAKY_Q,
         src_caps=src_caps, dl_caps=dl_caps, sink_caps=sink_caps,
         sink_element=SINK_ELEMENT)
 

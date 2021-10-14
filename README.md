@@ -1,7 +1,25 @@
 # Coral Smart Birdfeeder
-A smart birdfeeder that uses the Coral Enterprise Board + Camera module,
-and identifies the birds that use the feeder. It also implements a deterrent
+A smart birdfeeder that identifies the birds that use the feeder. It also implements a deterrent
 for any visiting squirrels.
+
+# Steps with Coral USB accelerator and linux machines
+
+```
+git clone https://github.com/google-coral/project-birdfeeder.git
+cd project-birdfeeder
+sh install_requirements.sh
+sh birdfeeder.sh
+
+```
+
+# Steps with Coal Dev Board and USB camera
+
+```
+git clone https://github.com/google-coral/project-birdfeeder.git
+cd project-birdfeeder
+sh install_requirements.sh
+sh birdfeeder_dev_board.sh
+```
 
 ## License
 Copyright 2019 Google LLC
